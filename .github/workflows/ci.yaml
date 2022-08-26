@@ -1,0 +1,71 @@
+name: CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'PKGBUILD'
+      - '.SRCINFO'
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - master
+
+jobs:
+  package-validate:
+    runs-on: ubuntu-latest
+    container:
+      image: martynas/archlinux:latest
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Give full access to package files
+        run: chown -R build .
+
+      - name: Add custom repo for dependencies
+        run: |
+          # Generate a default secret key to sign with
+          pacman-key --init
+          curl https://royarg02.github.io/assets/anurag.aexpk > key.aexpk
+          pacman-key --add key.aexpk
+          pacman-key --lsign-key D7EBD6CF
+          # Quoting the delimiter will prevent expansion
+          cat << "END" >> /etc/pacman.conf
+          [royarg-repo]
+          Server = https://royarg02.github.io/$repo/os/$arch
+          END
+
+      - name: Refresh repo databases
+        run: pacman -Sy
+
+      - name: Validate PKGBUILD
+        run: |
+          namcap PKGBUILD
+          pkgname=$(grep -E 'pkgname' .SRCINFO | sed -e 's/.*= //')
+          grep -E 'depends' .SRCINFO | \
+            sed -e 's/.*depends = //' -e 's/:.*//' | xargs yay -S --noconfirm
+          sudo -u build makepkg --syncdeps --noconfirm
+
+          source /etc/makepkg.conf
+
+          namcap "${pkgname}"-*"${PKGEXT}"
+          pacman -Qip "${pkgname}"-*"${PKGEXT}"
+          pacman -Qlp "${pkgname}"-*"${PKGEXT}"
+
+      - name: Validate SRCINFO
+        run: |
+          sudo -u build makepkg --printsrcinfo | \
+            diff --ignore-blank-lines .SRCINFO - || \
+            { echo ".SRCINFO is out of sync. Please run 'makepkg --printsrcinfo' and commit the changes."; false; }
+
+      - name: Validate binary
+        run: |
+          grep -E 'depends' .SRCINFO | \
+            sed -e 's/.*depends = //' -e 's/:.*//' | xargs yay -S --noconfirm
+          sudo -u build makepkg --syncdeps --noconfirm --install
+          # `dwm -v` exits with code 1, invert it so that this workflow passes
+          ! dwm -v
