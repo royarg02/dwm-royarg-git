@@ -1,7 +1,7 @@
 # Maintainer: Anurag Roy <anuragr9847@gmail.com>
 _pkgname="dwm"
 pkgname="$_pkgname-royarg-git"
-pkgver=6.3.r17.95c4d94
+pkgver=6.3.r18.2a640e5
 pkgrel=1
 pkgdesc="A modified version of the dynamic window manager for X."
 arch=('i686' 'x86_64')
@@ -12,7 +12,6 @@ makedepends=('git')
 optdepends=('st: A simple virtual terminal emulator for X.')
 provides=("$_pkgname")
 conflicts=("$_pkgname" "$_pkgname-git")
-install="$pkgname.install"
 source=("git+$url.git")
 md5sums=('SKIP')
 
