@@ -1,7 +1,7 @@
 # Maintainer: Anurag Roy <anuragr9847@gmail.com>
 _pkgname="dwm"
 pkgname="$_pkgname-royarg-git"
-pkgver=6.4.r0.722c435
+pkgver=6.4.r1.a721d63
 pkgrel=1
 pkgdesc="A modified version of the dynamic window manager for X."
 arch=('i686' 'x86_64')
